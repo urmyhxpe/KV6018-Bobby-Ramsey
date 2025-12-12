@@ -53,6 +53,11 @@ class ContainerVisualiser:
         )
         ax.add_patch(container_rect)
 
+        # Label rear door (at y=0)
+        ax.text(self.container.width / 2, -margin * 0.4, 'REAR DOOR',
+                ha='center', va='center', color='#F4BA02',
+                fontsize=11, fontweight='bold')
+
         # Draw centre of mass valid zone (central 60%)
         min_x, max_x, min_y, max_y = self.container.centre_zone_bounds()
         zone_width = max_x - min_x
@@ -67,7 +72,7 @@ class ContainerVisualiser:
 
         # Draw placed cylinders
         if self.solution and self.solution.placed:
-            for placed in self.solution.placed:
+            for order, placed in enumerate(self.solution.placed, start=1):
                 radius = placed.cylinder.diameter / 2
                 circle = patches.Circle(
                     (placed.x, placed.y), radius,
@@ -76,8 +81,8 @@ class ContainerVisualiser:
                 )
                 ax.add_patch(circle)
 
-                # Label with cylinder ID
-                ax.text(placed.x, placed.y, str(placed.cylinder.id), fontsize=10,
+                # Label orders
+                ax.text(placed.x, placed.y, str(order), fontsize=10,
                         ha='center', va='center',
                         color='#01364C', fontweight='bold')
 
