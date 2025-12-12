@@ -1,22 +1,20 @@
 import random
 
 from models import load_instance
-from placement import place_cylinders
 from fitness import FitnessEvaluator
-
+from placement import place_cylinders
 
 
 def random_ordering(num_cylinders):
     """Generate random orders"""
+    random.seed()
     ordering = list(range(num_cylinders))
     random.shuffle(ordering)
     return ordering
 
 
-def random_algorithm(problem, max_attempts=100, seed=None):
+def random_algorithm(problem, max_attempts):
     """Random baseline"""
-    if seed is not None:
-        random.seed(seed)
 
     container, cylinders = load_instance(problem)
 
@@ -28,7 +26,12 @@ def random_algorithm(problem, max_attempts=100, seed=None):
 
     for attempt in range(max_attempts):
         ordering = random_ordering(len(cylinders))
+
+        #print(f"\nOrdering: {ordering}")
         solution = place_cylinders(ordering, cylinders, container)
+        """print("Positions:")
+        for p in solution.placed:
+            print(f"  Cylinder {p.cylinder.id}: ({p.x:.2f}, {p.y:.2f})")"""
 
         fitness, is_feasible, details = evaluator.evaluate(solution)
 
