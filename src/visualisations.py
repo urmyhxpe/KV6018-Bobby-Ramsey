@@ -28,12 +28,14 @@ class ContainerVisualiser:
         self.solution = None
         self.fitness = None
         self.details = None
+        self.expected_count = None
 
-    def set_solution(self, solution, fitness=None, details=None):
+    def set_solution(self, solution, fitness=None, details=None, expected_count=None):
         """Set the solution to visualise."""
         self.solution = solution
         self.fitness = fitness
         self.details = details
+        self.expected_count = expected_count
 
     def draw(self, title="Container Packing Solution"):
         """Draw the current solution"""
@@ -53,8 +55,9 @@ class ContainerVisualiser:
         )
         ax.add_patch(container_rect)
 
-        # Label rear door (at y=0)
-        ax.text(self.container.width / 2, -margin * 0.4, 'REAR DOOR',
+        # Label rear door (y = depth)
+        ax.text(self.container.width / 2, self.container.depth + margin * 0.4,
+                'REAR DOOR',
                 ha='center', va='center', color='#F4BA02',
                 fontsize=11, fontweight='bold')
 
@@ -71,7 +74,9 @@ class ContainerVisualiser:
         ax.add_patch(com_zone)
 
         # Draw placed cylinders
+        placed_count = 0
         if self.solution and self.solution.placed:
+            placed_count = len(self.solution.placed)
             for order, placed in enumerate(self.solution.placed, start=1):
                 radius = placed.cylinder.diameter / 2
                 circle = patches.Circle(
@@ -90,6 +95,19 @@ class ContainerVisualiser:
             com_x, com_y = self.solution.center_of_mass()
             ax.plot(com_x, com_y, 'x', color='#D32F2F', markersize=15,
                     markeredgewidth=3, label=f'Centre of Mass ({com_x:.1f}, {com_y:.1f})')
+
+        # Placement count annotation
+        if self.expected_count is not None:
+            status = "✓" if placed_count == self.expected_count else "✗"
+            colour = '#2E7D32' if placed_count == self.expected_count else '#D32F2F'
+            count_text = f"Placed: {placed_count} / {self.expected_count} {status}"
+        else:
+            colour = '#F7F8F9'
+            count_text = f"Placed: {placed_count}"
+
+        ax.text(self.container.width, -margin * 0.5, count_text,
+                ha='right', va='center', color=colour,
+                fontsize=11, fontweight='bold')
 
         _apply_style(ax, fig, title)
 

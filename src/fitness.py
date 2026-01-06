@@ -1,12 +1,13 @@
 import math
-from geometry import count_overlaps, count_out_of_bounds, com_deviation
+from geometry import com_deviation
 
 
 class FitnessEvaluator:
 
-    def __init__(self, container, overlap_penalty=100.0, bounds_penalty=100.0,
+    def __init__(self, container, cylinders, overlap_penalty=100.0, bounds_penalty=100.0,
                  weight_penalty=50.0, com_penalty_base=10.0):
         self.container = container
+        self.expected_count = len(cylinders)
         self.overlap_penalty = overlap_penalty
         self.bounds_penalty = bounds_penalty
         self.weight_penalty = weight_penalty
@@ -17,6 +18,7 @@ class FitnessEvaluator:
         """ Evaluate fitness """
         total_weight = solution.total_weight()
         com_dev = com_deviation(solution, self.container)
+        total_placed = solution.num_placed()
 
         # Penalty for weight
         weight_excess = max(0, total_weight - self.container.max_weight)
@@ -32,7 +34,7 @@ class FitnessEvaluator:
         total_penalty = weight_pen + com_penalty
 
         # Incentivise good use of space
-        area_covered = sum(math.pi * p.cylinder.diameter / 2 ** 2 for p in solution.placed)
+        area_covered = sum(math.pi * (p.cylinder.diameter / 2) ** 2 for p in solution.placed)
         container_area = self.container.width * self.container.depth
         utilisation = area_covered / container_area if container_area > 0 else 0
 
@@ -40,7 +42,8 @@ class FitnessEvaluator:
 
         is_feasible = (
                 weight_excess == 0 and
-                com_dev == 0
+                com_dev == 0 and
+                total_placed == self.expected_count
         )
 
         details = {

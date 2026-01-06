@@ -2,8 +2,7 @@ import random
 
 from models import load_instance
 from fitness import FitnessEvaluator
-from placement import place_cylinders
-
+from greedy import greedy_placement
 
 def random_ordering(num_cylinders):
     """Generate random orders"""
@@ -13,12 +12,10 @@ def random_ordering(num_cylinders):
     return ordering
 
 
-def random_algorithm(problem, max_attempts):
+def random_algorithm(container, cylinders, max_attempts):
     """Random baseline"""
 
-    container, cylinders = load_instance(problem)
-
-    evaluator = FitnessEvaluator(container)
+    evaluator = FitnessEvaluator(container, cylinders)
 
     best_solution = None
     best_fitness = float('inf')
@@ -28,7 +25,7 @@ def random_algorithm(problem, max_attempts):
         ordering = random_ordering(len(cylinders))
 
         #print(f"\nOrdering: {ordering}")
-        solution = place_cylinders(ordering, cylinders, container)
+        solution = greedy_placement(ordering, cylinders, container)
         """print("Positions:")
         for p in solution.placed:
             print(f"  Cylinder {p.cylinder.id}: ({p.x:.2f}, {p.y:.2f})")"""

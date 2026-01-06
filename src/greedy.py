@@ -42,7 +42,13 @@ def find_valid_positions(cylinder, placed, container):
             get_corner_positions(r, container)
     )
 
-    return [position for position in all_positions if check_position_valid(position, cylinder, placed, container)]
+    positions = []
+    for x, y in all_positions:
+        if check_position_valid((x, y), cylinder, placed, container):
+            if is_loadable_from_rear(x, y, r, placed):
+                positions.append((x, y))
+
+    return positions
 
 
 
@@ -154,3 +160,17 @@ def score_position(position, cylinder, solution, center_x, center_y):
     solution.placed.pop()
 
     return score
+
+
+def is_loadable_from_rear(x, y, radius, placed):
+    """ Check if there is a straight line from rear door to cylinder  """
+    for p in placed:
+        pr = p.cylinder.diameter / 2
+
+        # check between door and cylinder
+        if p.y >= y:
+            # check collision
+            if abs(p.x - x) < radius + pr:
+                return False
+
+    return True
