@@ -1,6 +1,5 @@
-import matplotlib
-
-matplotlib.use('TkAgg')
+#import matplotlib
+#matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 from models import load_instance
@@ -9,7 +8,7 @@ from random_baseline import random_algorithm
 from evolutionary import EvolutionaryAlgorithm
 from greedy import greedy_placement
 from fitness import FitnessEvaluator
-from visualisations import ContainerVisualiser
+from visualisations import ContainerVisualiser, EvolutionVisualiser
 
 
 def run_random_baseline(instances, max_attempts):
@@ -39,8 +38,8 @@ def run_random_baseline(instances, max_attempts):
 
 def run_evolutionary(instances, placement_func):
     """Run evolutionary algorithm on all instances."""
-    print("Evolutionary Algorithm")
     print("=" * 60)
+    print("Evolutionary Algorithm")
 
     results = []
 
@@ -65,7 +64,7 @@ def run_evolutionary(instances, placement_func):
         solution = ea.run(
             max_generations=100,
             target_fitness=None,
-            verbose=True
+            track_output=True
         )
 
         # Get final fitness from best individual
@@ -98,15 +97,40 @@ def visualise_results(results):
             title=f"{result['name']}\nFitness: {result['fitness']:.3f}, Feasible: {result['details']['is_feasible']}")
         plt.show()
 
+def visualise_ea_results(results):
+    """Visualise EA results including evolution progress."""
+    for result in results:
+        # Container solution
+        display = ContainerVisualiser(result['container'])
+        display.set_solution(result['solution'], result['fitness'], result['details'],
+                            expected_count=result['expected_count'])
+        display.draw(
+            title=f"{result['name']}\nFitness: {result['fitness']:.3f}, Feasible: {result['details']['is_feasible']}")
+        plt.show()
+
+        # Evolution progress
+        progress = EvolutionVisualiser(result['history'])
+        progress.draw(title=f"{result['name']} - Evolution Progress")
+        plt.show()
 
 if __name__ == "__main__":
     basic_instances = create_basic_instances()
     challenging_instances = create_challenging_instances()
 
     # Random baseline
-    base_results = run_random_baseline(basic_instances, max_attempts=5)
-    visualise_results(base_results)
+
+    #base_results_basic = run_random_baseline(basic_instances, max_attempts=5)
+    #visualise_results(base_results_basic)
+
+    base_results_adv = run_random_baseline(challenging_instances, max_attempts=5)
+    visualise_results(base_results_adv)
 
     # Evolutionary algorithm
-    results = run_evolutionary(basic_instances, greedy_placement)
-    visualise_results(results)
+
+    #results_basic = run_evolutionary(basic_instances, greedy_placement)
+    #visualise_results(results_basic)
+    #visualise_ea_results(results)
+
+    results_adv = run_evolutionary(challenging_instances, greedy_placement)
+    visualise_results(results_adv)
+    visualise_ea_results(results_adv)
