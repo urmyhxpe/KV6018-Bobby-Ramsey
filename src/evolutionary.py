@@ -138,13 +138,26 @@ class Population:
         if not every_fitness:
             return {"best": None, "worst": None, "average": None}
 
+        feasible_count = 0
+        for ind in self.individuals:
+            if ind.is_feasible:
+                feasible_count = feasible_count + 1
+
         return {
             "best": min(every_fitness),
             "worst": max(every_fitness),
             "average": sum(every_fitness) / len(every_fitness),
-            "generation": self.generation
+            "generation": self.generation,
+            "feasibility_ratio": feasible_count / len(self.individuals)
         }
 
+    def get_feasibility_ratio(self):
+        """ Calculate proportion of feasible individuals """
+        feasible_count = 0
+        for ind in self.individuals:
+            if ind.is_feasible:
+                feasible_count = feasible_count + 1
+        return feasible_count / len(self.individuals)
 
 class EvolutionaryAlgorithm:
     """ Main class coordinating the evolutionary optimisation process """
@@ -167,7 +180,7 @@ class EvolutionaryAlgorithm:
         # History tracking
         self.history = []
 
-    def run(self, max_generations, target_fitness, verbose):
+    def run(self, max_generations, target_fitness, track_output):
         """ Run the evolutionary algorithm for specified generations """
         # Initial evaluation
         self.population.evaluate_all(
@@ -176,11 +189,19 @@ class EvolutionaryAlgorithm:
         )
 
         stats = self.population.get_stats()
+        feasibility_ratio = self.population.get_feasibility_ratio()
+
         self.history.append(stats)
 
-        if verbose:
-            print(f"Generation 0: Best={stats['best']:.4f}, "
-                  f"Avg={stats['average']:.4f}")
+        # Adapt penalty based on feasibility
+        self.fitness_evaluator.adapt_penalty(feasibility_ratio)
+
+        if track_output:
+            best_feasible = self.population.best_ever.is_feasible
+            print(f"Generation 0: Best={stats['best']:.3f}, "
+                  f"Avg={stats['average']:.3f}, "
+                  f"Feasible={stats['feasibility_ratio']:.0%}, "
+                  f"Solution found={best_feasible}")
 
         # Main evolution loop
         for gen in range(1, max_generations + 1):
@@ -196,14 +217,17 @@ class EvolutionaryAlgorithm:
             stats = self.population.get_stats()
             self.history.append(stats)
 
-            if verbose and gen % 10 == 0:
+            if track_output and gen % 10 == 0:
+                best_feasible = self.population.best_ever.is_feasible
                 print(f"Generation {gen}: Best={stats['best']:.4f}, "
-                      f"Avg={stats['average']:.4f}")
+                      f"Avg={stats['average']:.4f}, "
+                      f"Feasible={stats['feasibility_ratio']:.0%}, "
+                      f"Solution found={best_feasible}")
 
-            # Check for early stopping (lower fitness is better)
+            # Check for early stopping
             if target_fitness is not None:
                 if stats['best'] <= target_fitness:
-                    if verbose:
+                    if track_output:
                         print(f"Target fitness reached at generation {gen}")
                     break
 
