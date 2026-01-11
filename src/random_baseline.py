@@ -1,6 +1,5 @@
 import random
 
-from models import load_instance
 from fitness import FitnessEvaluator
 from greedy import greedy_placement
 
@@ -15,10 +14,10 @@ def random_ordering(num_cylinders):
 def random_algorithm(container, cylinders, max_attempts):
     """Random baseline"""
 
-    evaluator = FitnessEvaluator(container, cylinders)
+    evaluator = FitnessEvaluator(container, cylinders, 100.0, 100.0, 50.0, 10.0)
 
     best_solution = None
-    best_fitness = float('inf')
+    best_fitness = float('-inf')
     best_details = None
 
     for attempt in range(max_attempts):
@@ -32,7 +31,7 @@ def random_algorithm(container, cylinders, max_attempts):
 
         fitness, is_feasible, details = evaluator.evaluate(solution)
 
-        if fitness < best_fitness:
+        if fitness > best_fitness:
             best_solution = solution
             best_fitness = fitness
             best_details = details
