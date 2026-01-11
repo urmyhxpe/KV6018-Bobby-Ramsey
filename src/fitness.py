@@ -4,8 +4,8 @@ from geometry import com_deviation
 
 class FitnessEvaluator:
 
-    def __init__(self, container, cylinders, overlap_penalty=100.0, bounds_penalty=100.0,
-                 weight_penalty=50.0, com_penalty_base=10.0):
+    def __init__(self, container, cylinders, overlap_penalty, bounds_penalty,
+                 weight_penalty, com_penalty_base):
         self.container = container
         self.expected_count = len(cylinders)
         self.overlap_penalty = overlap_penalty
@@ -38,7 +38,7 @@ class FitnessEvaluator:
         container_area = self.container.width * self.container.depth
         utilisation = area_covered / container_area if container_area > 0 else 0
 
-        fitness = total_penalty - (utilisation * 100)
+        fitness = (utilisation * 100) - total_penalty
 
         is_feasible = (
                 weight_excess == 0 and

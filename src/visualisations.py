@@ -13,7 +13,7 @@ def _apply_style(ax, fig, title, xlabel, ylabel):
     ax.set_xlabel(xlabel, color='#F7F8F9', fontsize=12)
     ax.set_ylabel(ylabel, color='#F7F8F9', fontsize=12)
     ax.set_title(title, color='#F7F8F9', fontsize=14, fontweight='bold', pad=20)
-    ax.legend(loc='upper right', facecolor='#01364C', edgecolor='#F7F8F9',
+    ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1), facecolor='#01364C', edgecolor='#F7F8F9',
               labelcolor='#F7F8F9', framealpha=0.9)
     ax.grid(True, alpha=0.3, color='#F7F8F9')
 
@@ -108,7 +108,7 @@ class ContainerVisualiser:
                 fontsize=11, fontweight='bold')
 
         _apply_style(ax, fig, title, 'Width (m)', 'Depth (m)')
-        plt.tight_layout()
+        plt.tight_layout(rect=(0, 0, 0.85, 1))
 
         return fig, ax
 
@@ -127,21 +127,33 @@ class EvolutionVisualiser:
         best_fitness = [stats['best'] for stats in self.history]
         avg_fitness = [stats['average'] for stats in self.history]
         feasibility = [stats['feasibility_ratio'] * 100 for stats in self.history]
+        coefficient = [stats['adaptive_coefficient'] for stats in self.history]
 
         # Top plot: Fitness over generations
         ax1.plot(generations, best_fitness, color='#2E7D32', linewidth=2, label='Best Fitness')
         ax1.plot(generations, avg_fitness, color='#F4BA02', linewidth=2, label='Average Fitness')
-        _apply_style(ax1, fig, 'Fitness Progress', 'Generation', 'Fitness (lower is better)')
+        _apply_style(ax1, fig, 'Fitness Progress', 'Generation', 'Fitness')
 
         # Bottom plot: Feasibility ratio over generations
         ax2.plot(generations, feasibility, color='#99D9DD', linewidth=2, label='Feasibility %')
         ax2.axhline(y=100, color='#2E7D32', linestyle='--', linewidth=1, label='100% Target')
         ax2.set_ylim(0, 105)
-        _apply_style(ax2, fig, 'Population Feasibility', 'Generation', 'Feasibility (%)')
-        ax2.legend(loc='lower right', facecolor='#01364C', edgecolor='#F7F8F9',
-                   labelcolor='#F7F8F9', framealpha=0.9)
+        _apply_style(ax2, fig, 'Population Feasibility & Adaptive Coefficient', 'Generation', 'Feasibility (%)')
+
+        # Secondary y-axis for adaptive coefficient
+        ax3 = ax2.twinx()
+        ax3.plot(generations, coefficient, color='#FF6B6B', linewidth=2, linestyle=':', label='Coeff')
+        ax3.set_ylabel('Adaptive Coefficient', color='#FF6B6B', fontsize=12)
+        ax3.tick_params(axis='y', colors='#FF6B6B')
+        ax3.spines['right'].set_color('#FF6B6B')
+
+        # Combine legends from ax2 and ax3
+        lines1, labels1 = ax2.get_legend_handles_labels()
+        lines2, labels2 = ax3.get_legend_handles_labels()
+        ax2.legend(lines1 + lines2, labels1 + labels2, loc='upper left', bbox_to_anchor=(1.12, 1),
+                   facecolor='#01364C', edgecolor='#F7F8F9', labelcolor='#F7F8F9', framealpha=0.9)
 
         fig.suptitle(title, color='#F7F8F9', fontsize=16, fontweight='bold')
-        plt.tight_layout()
+        plt.tight_layout(rect=(0, 0, 0.85, 0.95))
 
         return fig, (ax1, ax2)

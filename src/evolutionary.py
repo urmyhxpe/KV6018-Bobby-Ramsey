@@ -50,15 +50,15 @@ class Population:
             individual.is_feasible = is_feasible
             individual.details = details
 
-        # Tracking the best solution
+        # Tracking the best solution (higher is better)
         current_best = self.get_best()
-        if self.best_ever is None or current_best.fitness < self.best_ever.fitness:
+        if self.best_ever is None or current_best.fitness > self.best_ever.fitness:
             self.best_ever = current_best.copy()
 
     def tournament_selection(self):
         """ Select one individual using tournament selection """
         tournament = random.sample(self.individuals, self.tournament_size)
-        return min(tournament, key=lambda ind: ind.fitness)
+        return max(tournament, key=lambda ind: ind.fitness)
 
     def ordered_crossover(self, parent1, parent2):
         """ Perform Ordered Crossover (OX) to create a child """
@@ -129,10 +129,10 @@ class Population:
         self.generation += 1
 
     def get_best(self):
-        """ Return the individual with the lowest fitness """
-        return min(self.individuals, key=lambda ind: ind.fitness)
+        """ Return the individual with the highest fitness """
+        return max(self.individuals, key=lambda ind: ind.fitness)
 
-    def get_stats(self):
+    def get_stats(self, adaptive_coefficient):
         """ Calculate population statistics """
         every_fitness = [ind.fitness for ind in self.individuals if ind.fitness is not None]
         if not every_fitness:
@@ -144,11 +144,12 @@ class Population:
                 feasible_count = feasible_count + 1
 
         return {
-            "best": min(every_fitness),
-            "worst": max(every_fitness),
+            "best": max(every_fitness),
+            "worst": min(every_fitness),
             "average": sum(every_fitness) / len(every_fitness),
             "generation": self.generation,
-            "feasibility_ratio": feasible_count / len(self.individuals)
+            "feasibility_ratio": feasible_count / len(self.individuals),
+            "adaptive_coefficient": adaptive_coefficient
         }
 
     def get_feasibility_ratio(self):
@@ -158,6 +159,7 @@ class Population:
             if ind.is_feasible:
                 feasible_count = feasible_count + 1
         return feasible_count / len(self.individuals)
+
 
 class EvolutionaryAlgorithm:
     """ Main class coordinating the evolutionary optimisation process """
@@ -188,7 +190,7 @@ class EvolutionaryAlgorithm:
             self.placement_func, self.fitness_evaluator
         )
 
-        stats = self.population.get_stats()
+        stats = self.population.get_stats(self.fitness_evaluator.com_adaptive_coefficient)
         feasibility_ratio = self.population.get_feasibility_ratio()
 
         self.history.append(stats)
@@ -214,7 +216,7 @@ class EvolutionaryAlgorithm:
                 self.placement_func, self.fitness_evaluator
             )
 
-            stats = self.population.get_stats()
+            stats = self.population.get_stats(self.fitness_evaluator.com_adaptive_coefficient)
             self.history.append(stats)
 
             if track_output and gen % 10 == 0:
@@ -226,7 +228,7 @@ class EvolutionaryAlgorithm:
 
             # Check for early stopping
             if target_fitness is not None:
-                if stats['best'] <= target_fitness:
+                if stats['best'] >= target_fitness:
                     if track_output:
                         print(f"Target fitness reached at generation {gen}")
                     break
