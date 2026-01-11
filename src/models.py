@@ -1,6 +1,3 @@
-from typing import Dict
-
-
 class Cylinder:
     """Represents a cylindrical container"""
 
