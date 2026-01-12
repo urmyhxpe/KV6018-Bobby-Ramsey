@@ -1,54 +1,42 @@
+import random
 from models import PlacedCylinder, Solution
-from geometry import circles_overlap
+from geometry import circles_overlap, is_within_bounds
 
 
-def find_placement_position(cylinder, placed_list, container):
-    """ Find a position for the cylinder"""
+def find_random_position(cylinder, placed_list, container):
+    """ Find a random valid position """
     r = cylinder.diameter / 2
-    step = min(r / 2, 0.5)
 
-    best_y = float('inf')
-    best_x = r
+    for attempt in range(1000):
+        # Generate random position within bounds
+        x = random.uniform(r, container.width - r)
+        y = random.uniform(r, container.depth - r)
 
-    # Scan from rear (y=r) to front
-    y = r
-    while y + r <= container.depth:
-        x = r
-        while x + r <= container.width:
-            # Check if position is valid
-            valid = True
-            test_placed = PlacedCylinder(cylinder, x, y)
-            for p in placed_list:
-                if circles_overlap(test_placed, p):
-                    valid = False
-                    break
+        # Check if  valid
+        test_placed = PlacedCylinder(cylinder, x, y)
 
-            if valid and y < best_y:
-                best_y = y
-                best_x = x
+        valid = True
+        for p in placed_list:
+            if circles_overlap(test_placed, p):
+                valid = False
                 break
 
-            x += step
+        if valid:
+            return x, y
 
-        if best_y < float('inf'):
-            break
-        y += step
-
-    # Default
-    if best_y == float('inf'):
-        best_y = r
-        best_x = r
-
-    return best_x, best_y
+    return None, None
 
 
-def place_cylinders(ordering, cylinders, container):
-    """Place cylinders in order"""
+def place_cylinders_random(ordering, cylinders, container, max_attempts):
+    """Place cylinders randomly"""
     solution = Solution()
 
     for idx in ordering:
         cyl = cylinders[idx]
-        x, y = find_placement_position(cyl, solution.placed, container)
-        solution.placed.append(PlacedCylinder(cyl, x, y))
+        x, y = find_random_position(cyl, solution.placed, container)
+
+        # Only add if valid position found
+        if x is not None:
+            solution.placed.append(PlacedCylinder(cyl, x, y))
 
     return solution
