@@ -1,4 +1,5 @@
 import math
+import random
 
 from models import Solution, PlacedCylinder
 from geometry import is_within_bounds, circles_overlap
@@ -16,8 +17,8 @@ def greedy_placement(ordering, cylinders, container):
         current_cyl = cylinders[idx]
         valid_positions = find_valid_positions(current_cyl, solution.placed, container)
         if valid_positions:
-            best_position = min(valid_positions,key=lambda p: score_position(p, current_cyl, solution, center_x, center_y))
-
+            #best_position = min(valid_positions,key=lambda p: score_position(p, current_cyl, solution, center_x, center_y))
+            best_position = valid_positions[0]
             placed = PlacedCylinder(cylinder=current_cyl, x=best_position[0], y=best_position[1])
             solution.placed.append(placed)
 
@@ -144,7 +145,7 @@ def find_cylinder_tangent_positions(cylinder, placed):
     return positions
 
 
-def score_position(position, cylinder, solution, center_x, center_y):
+#def score_position(position, cylinder, solution, center_x, center_y):
     """ Measure position distance from COM so the best positions disrupt the COM the least"""
     x, y = position
 

@@ -27,7 +27,7 @@ def find_random_position(cylinder, placed_list, container):
     return None, None
 
 
-def place_cylinders_random(ordering, cylinders, container, max_attempts):
+def place_cylinders_random(ordering, cylinders, container):
     """Place cylinders randomly"""
     solution = Solution()
 

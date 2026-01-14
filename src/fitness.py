@@ -31,14 +31,13 @@ class FitnessEvaluator:
                 (com_dev ** 2)
         )
 
-        total_penalty = weight_pen + com_penalty
+        # Unplaced penalty
+        unplaced_count = self.expected_count - total_placed
+        unplaced_penalty = unplaced_count * 50.0
 
-        # Incentivise good use of space
-        area_covered = sum(math.pi * (p.cylinder.diameter / 2) ** 2 for p in solution.placed)
-        container_area = self.container.width * self.container.depth
-        utilisation = area_covered / container_area if container_area > 0 else 0
+        total_penalty = weight_pen + com_penalty + unplaced_penalty
 
-        fitness = (utilisation * 100) - total_penalty
+        fitness = 100 - total_penalty
 
         is_feasible = (
                 weight_excess == 0 and
@@ -50,7 +49,6 @@ class FitnessEvaluator:
             'total_weight': total_weight,
             'weight_excess': weight_excess,
             'com_deviation': com_dev,
-            'utilisation': utilisation,
             'is_feasible': is_feasible
         }
 
@@ -59,8 +57,8 @@ class FitnessEvaluator:
     def adapt_penalty(self, feasibility_ratio):
         """Adapt COM coefficient"""
         if feasibility_ratio < 0.1:
-            self.com_adaptive_coefficient *= 0.9
+            self.com_adaptive_coefficient *= 0.95
         elif feasibility_ratio > 0.5:
-            self.com_adaptive_coefficient *= 1.1
+            self.com_adaptive_coefficient *= 1.05
 
         self.com_adaptive_coefficient = max(0.1, min(10.0, self.com_adaptive_coefficient))

@@ -19,7 +19,7 @@ def _apply_style(ax, fig, title, xlabel, ylabel):
 
 
 class ContainerVisualiser:
-    """Visualiser"""
+    """Visualiser for a single container solution."""
 
     def __init__(self, container):
         self.container = container
@@ -35,9 +35,12 @@ class ContainerVisualiser:
         self.details = details
         self.expected_count = expected_count
 
-    def draw(self, title="Container Packing Solution"):
-        """Draw the current solution"""
-        fig, ax = plt.subplots(figsize=(12, 10))
+    def draw(self, title="Container Packing Solution", ax=None, fig=None):
+        """Draw the current solution. Can draw to existing axes if provided."""
+        if ax is None or fig is None:
+            fig, ax = plt.subplots(figsize=(12, 10))
+
+        ax.clear()
 
         # Set up plot area
         margin = max(self.container.width, self.container.depth) * 0.1
@@ -114,13 +117,13 @@ class ContainerVisualiser:
 
 
 class EvolutionVisualiser:
-    """ Visualiser for EA progress across generations """
+    """Visualiser for EA progress across generations."""
 
     def __init__(self, history):
         self.history = history
 
     def draw(self, title="Evolutionary Algorithm Progress"):
-        """ Draw fitness and feasibility progress """
+        """Draw fitness and feasibility progress."""
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8))
 
         generations = [stats['generation'] for stats in self.history]
@@ -157,3 +160,97 @@ class EvolutionVisualiser:
         plt.tight_layout(rect=(0, 0, 0.85, 0.95))
 
         return fig, (ax1, ax2)
+
+
+class SolutionComparer:
+
+    def __init__(self):
+        self.solutions = []  # List of (algorithm_name, result_dict) tuples
+        self.current_index = 0
+        self.fig = None
+        self.ax = None
+
+    def add_solution(self, algorithm_name, result):
+
+        self.solutions.append((algorithm_name, result))
+
+    def _draw_current(self):
+        if not self.solutions:
+            return
+
+        algorithm_name, result = self.solutions[self.current_index]
+
+        # Create visualiser
+        vis = ContainerVisualiser(result['container'])
+        vis.set_solution(
+            result['solution'],
+            result.get('fitness'),
+            result.get('details'),
+            result.get('expected_count')
+        )
+
+        feasible = result.get('details', {}).get('is_feasible', False)
+        fitness = result.get('fitness', 0)
+        nav_info = f"[{self.current_index + 1}/{len(self.solutions)}]"
+        title = f"{nav_info} {algorithm_name}\nFitness: {fitness:.3f}, Feasible: {feasible}"
+
+        vis.draw(title=title, ax=self.ax, fig=self.fig)
+
+        # Add  instructions
+        self.ax.text(
+            0.5, -0.08,
+            "← → Arrow keys to flip between algorithms | Q to quit",
+            transform=self.ax.transAxes,
+            ha='center', va='top',
+            color='#F7F8F9', fontsize=10,
+            bbox=dict(boxstyle='round', facecolor='#01364C', edgecolor='#F4BA02', alpha=0.9)
+        )
+
+        self.fig.canvas.draw_idle()
+
+    def _on_key(self, event):
+        if event.key == 'right':
+            self.current_index = (self.current_index + 1) % len(self.solutions)
+            self._draw_current()
+        elif event.key == 'left':
+            self.current_index = (self.current_index - 1) % len(self.solutions)
+            self._draw_current()
+        elif event.key == 'q':
+            plt.close(self.fig)
+
+    def show(self):
+        """Display the comparison"""
+        if not self.solutions:
+            print("No solutions to compare.")
+            return
+
+        self.fig, self.ax = plt.subplots(figsize=(12, 10))
+        self.fig.canvas.mpl_connect('key_press_event', self._on_key)
+
+        self._draw_current()
+        plt.show()
+
+
+def compare_solutions(results_dict):
+
+    comparer = SolutionComparer()
+    for name, result in results_dict.items():
+        comparer.add_solution(name, result)
+    comparer.show()
+
+
+def compare_all_algorithms(instance_name, *algorithm_results):
+
+    comparer = SolutionComparer()
+
+    for algo_name, results in algorithm_results:
+        # Find result matching the instance
+        for result in results:
+            if result['name'] == instance_name:
+                comparer.add_solution(algo_name, result)
+                break
+
+    if comparer.solutions:
+        comparer.show()
+    else:
+        print(f"No results found for instance: {instance_name}")

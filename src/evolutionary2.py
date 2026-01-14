@@ -1,21 +1,31 @@
 import random
 
 
-class Individual:
-    """ Represents a single solution in the population """
+class Individual2:
+    """ Extended chromosome: ordering + position_choices """
 
-    def __init__(self, num_cylinders):
-        # Order-based encoding
-        self.chromosome = list(range(num_cylinders))
-        random.shuffle(self.chromosome)
+    def __init__(self, num_cylinders, max_positions=20):
+        # Order-based encoding for placement sequence
+        self.ordering = list(range(num_cylinders))
+        random.shuffle(self.ordering)
+
+        # Position selection for each placement step
+        #self.position_choices = [
+         #   random.randint(0, max_positions - 1)
+         #   for _ in range(num_cylinders)
+        #]
+        self.position_choices = [0] * num_cylinders
+
+        self.max_positions = max_positions
         self.fitness = None
-        self.solution = None  # Stores the decoded Solution
+        self.solution = None
         self.is_feasible = False
         self.details = None
 
     def copy(self):
-        new_individual = Individual(len(self.chromosome))
-        new_individual.chromosome = self.chromosome[:]
+        new_individual = Individual2(len(self.ordering), self.max_positions)
+        new_individual.ordering = self.ordering[:]
+        new_individual.position_choices = self.position_choices[:]
         new_individual.fitness = self.fitness
         new_individual.solution = self.solution
         new_individual.is_feasible = self.is_feasible
@@ -23,32 +33,37 @@ class Individual:
         return new_individual
 
 
-class Population:
-    """ Manages the population of individuals and evolutionary operations """
+class Population2:
+    """ Manages the population with extended chromosome """
 
-    def __init__(self, pop_size, num_cylinders, tournament_size):
+    def __init__(self, pop_size, num_cylinders, tournament_size, max_positions=20):
         self.pop_size = pop_size
         self.num_cylinders = num_cylinders
         self.tournament_size = tournament_size
+        self.max_positions = max_positions
         self.individuals = []
         self.generation = 0
         self.best_ever = None
 
-        # Initialise population with random individuals
         for _ in range(pop_size):
-            self.individuals.append(Individual(num_cylinders))
+            self.individuals.append(Individual2(num_cylinders, max_positions))
 
     def evaluate_all(self, cylinders, container, placement_func, fitness_evaluator):
         """ Evaluate fitness for whole population """
         for individual in self.individuals:
-            # Decode chromosome using placement algorithm
-            individual.solution = placement_func(individual.chromosome, cylinders, container)
+            # Pass both ordering AND position_choices to placement
+            individual.solution = placement_func(
+                individual.ordering,
+                individual.position_choices,
+                cylinders,
+                container
+            )
             fitness, is_feasible, details = fitness_evaluator.evaluate(individual.solution)
             individual.fitness = fitness
             individual.is_feasible = is_feasible
             individual.details = details
 
-        # Tracking the best solution (higher is better)
+        # Track best solution (higher is better)
         current_best = self.get_best()
         if self.best_ever is None or current_best.fitness > self.best_ever.fitness:
             self.best_ever = current_best.copy()
@@ -59,67 +74,81 @@ class Population:
         return max(tournament, key=lambda ind: ind.fitness)
 
     def ordered_crossover(self, parent1, parent2):
-        """ Perform Ordered Crossover (OX) to create a child """
-        size = len(parent1.chromosome)
-        child = Individual(size)
-        child.chromosome = [None] * size
+        """ Perform Ordered Crossover (OX) for ordering part """
+        size = len(parent1.ordering)
+        child_ordering = [None] * size
 
-        # Select random segment from parent1
         start = random.randint(0, size - 2)
         end = random.randint(start + 1, size - 1)
 
-        # Copy segment from parent1 to child
         for i in range(start, end + 1):
-            child.chromosome[i] = parent1.chromosome[i]
+            child_ordering[i] = parent1.ordering[i]
 
-        # Fill remaining positions from parent2 in order
         parent2_genes = []
-        for gene in parent2.chromosome:
-            if gene not in child.chromosome:
+        for gene in parent2.ordering:
+            if gene not in child_ordering:
                 parent2_genes.append(gene)
 
-        # Fill empty positions
         gene_index = 0
         for i in range(size):
-            if child.chromosome[i] is None:
-                child.chromosome[i] = parent2_genes[gene_index]
+            if child_ordering[i] is None:
+                child_ordering[i] = parent2_genes[gene_index]
                 gene_index += 1
 
+        return child_ordering
+
+    def uniform_crossover_positions(self, parent1, parent2):
+        """ Uniform crossover for position_choices """
+        child_positions = []
+        for i in range(len(parent1.position_choices)):
+            if random.random() < 0.5:
+                child_positions.append(parent1.position_choices[i])
+            else:
+                child_positions.append(parent2.position_choices[i])
+        return child_positions
+
+    def crossover(self, parent1, parent2):
+        """ Combined crossover for extended chromosome """
+        child = Individual2(self.num_cylinders, self.max_positions)
+        child.ordering = self.ordered_crossover(parent1, parent2)
+        child.position_choices = self.uniform_crossover_positions(parent1, parent2)
         return child
 
-    def swap_mutation(self, individual, mutation_rate):
-        """ Apply swap mutation with given probability """
-        if random.random() < mutation_rate:
-            size = len(individual.chromosome)
+    def mutate(self, individual, ordering_rate, position_rate):
+        """
+        Mutation for extended chromosome.
+        ordering_rate: probability of swap mutation on ordering
+        position_rate: probability of resetting each position choice
+        """
+        # Swap mutation for ordering
+        if random.random() < ordering_rate:
+            size = len(individual.ordering)
             pos1 = random.randint(0, size - 1)
             pos2 = random.randint(0, size - 1)
             while pos2 == pos1:
                 pos2 = random.randint(0, size - 1)
+            individual.ordering[pos1], individual.ordering[pos2] = \
+                individual.ordering[pos2], individual.ordering[pos1]
 
-            # Swap the two positions
-            individual.chromosome[pos1], individual.chromosome[pos2] = \
-                individual.chromosome[pos2], individual.chromosome[pos1]
+        # Random reset mutation for position choices
+        for i in range(len(individual.position_choices)):
+            if random.random() < position_rate:
+                individual.position_choices[i] = random.randint(0, self.max_positions - 1)
 
-    def evolve(self, mutation_rate, elitism):
-        """ Create next generation through selection, crossover, and mutation """
+    def evolve(self, ordering_mutation_rate, position_mutation_rate, elitism):
+        """ Create next generation """
         new_population = []
 
-        # Elitism: keep the best individual
         if elitism:
             best = self.get_best()
             new_population.append(best.copy())
 
-        # Fill rest of population
         while len(new_population) < self.pop_size:
-            # Select parents
             parent1 = self.tournament_selection()
             parent2 = self.tournament_selection()
 
-            # Create offspring through crossover
-            child = self.ordered_crossover(parent1, parent2)
-
-            # Apply mutation
-            self.swap_mutation(child, mutation_rate)
+            child = self.crossover(parent1, parent2)
+            self.mutate(child, ordering_mutation_rate, position_mutation_rate)
 
             new_population.append(child)
 
@@ -139,7 +168,7 @@ class Population:
         feasible_count = 0
         for ind in self.individuals:
             if ind.is_feasible:
-                feasible_count = feasible_count + 1
+                feasible_count += 1
 
         return {
             "best": max(every_fitness),
@@ -155,33 +184,40 @@ class Population:
         feasible_count = 0
         for ind in self.individuals:
             if ind.is_feasible:
-                feasible_count = feasible_count + 1
+                feasible_count += 1
         return feasible_count / len(self.individuals)
 
 
-class EvolutionaryAlgorithm:
-    """ Main class coordinating the evolutionary optimisation process """
+class EvolutionaryAlgorithm2:
+    """ EA with extended chromosome (ordering + position_choices) """
 
     def __init__(self, container, cylinders, placement_func, fitness_evaluator,
-                 pop_size, tournament_size, mutation_rate, elitism):
+                 pop_size, tournament_size, ordering_mutation_rate,
+                 position_mutation_rate, elitism, max_positions=20):
         self.container = container
         self.cylinders = cylinders
         self.placement_func = placement_func
         self.fitness_evaluator = fitness_evaluator
         self.pop_size = pop_size
         self.tournament_size = tournament_size
-        self.mutation_rate = mutation_rate
+        self.ordering_mutation_rate = ordering_mutation_rate
+        self.position_mutation_rate = position_mutation_rate
         self.elitism = elitism
+        self.max_positions = max_positions
         self.num_cylinders = len(cylinders)
 
-        # Initialise population
-        self.population = Population(pop_size, self.num_cylinders, tournament_size)
+        # Initialise population with extended chromosome
+        self.population = Population2(
+            pop_size,
+            self.num_cylinders,
+            tournament_size,
+            max_positions
+        )
 
-        # History tracking
         self.history = []
 
     def run(self, max_generations, target_fitness, track_output):
-        """ Run the evolutionary algorithm for specified generations """
+        """ Run the evolutionary algorithm """
         # Initial evaluation
         self.population.evaluate_all(
             self.cylinders, self.container,
@@ -192,7 +228,6 @@ class EvolutionaryAlgorithm:
         feasibility_ratio = self.population.get_feasibility_ratio()
         self.history.append(stats)
 
-        # Adapt penalty based on feasibility
         self.fitness_evaluator.adapt_penalty(feasibility_ratio)
 
         if track_output:
@@ -204,16 +239,17 @@ class EvolutionaryAlgorithm:
 
         # Main evolution loop
         for gen in range(1, max_generations + 1):
-            # Create next generation
-            self.population.evolve(self.mutation_rate, self.elitism)
+            self.population.evolve(
+                self.ordering_mutation_rate,
+                self.position_mutation_rate,
+                self.elitism
+            )
 
-            # Evaluate new population
             self.population.evaluate_all(
                 self.cylinders, self.container,
                 self.placement_func, self.fitness_evaluator
             )
 
-            # Adapt penalty each generation
             feasibility_ratio = self.population.get_feasibility_ratio()
             self.fitness_evaluator.adapt_penalty(feasibility_ratio)
             stats = self.population.get_stats(self.fitness_evaluator.com_adaptive_coefficient)
@@ -226,7 +262,6 @@ class EvolutionaryAlgorithm:
                       f"Feasible={stats['feasibility_ratio']:.0%}, "
                       f"Solution found={best_feasible}")
 
-            # Check for early stopping
             if target_fitness is not None:
                 if stats['best'] >= target_fitness:
                     if track_output:
@@ -239,9 +274,9 @@ class EvolutionaryAlgorithm:
         """ Return the best solution found """
         return self.population.best_ever.solution
 
-    def get_best_chromosome(self):
-        """ Return the best chromosome found """
-        return self.population.best_ever.chromosome
+    def get_best_individual(self):
+        """ Return the best individual found """
+        return self.population.best_ever
 
     def get_history(self):
         """ Return the evolution history """
