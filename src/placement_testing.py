@@ -2,6 +2,7 @@ import random
 from models import PlacedCylinder, Solution
 from geometry import circles_overlap, is_within_bounds
 
+#  another placement algorithm for testing/experiments, now defunct. used to be the simple right-left program
 
 def find_random_position(cylinder, placed_list, container):
     """ Find a random valid position """

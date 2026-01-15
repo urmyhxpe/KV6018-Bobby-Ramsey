@@ -36,7 +36,7 @@ class ContainerVisualiser:
         self.expected_count = expected_count
 
     def draw(self, title="Container Packing Solution", ax=None, fig=None):
-        """Draw the current solution. Can draw to existing axes if provided."""
+        """Draw the current solution."""
         if ax is None or fig is None:
             fig, ax = plt.subplots(figsize=(12, 10))
 
@@ -232,7 +232,7 @@ class SolutionComparer:
 
 
 def compare_solutions(results_dict):
-
+    # Compare solution placements
     comparer = SolutionComparer()
     for name, result in results_dict.items():
         comparer.add_solution(name, result)

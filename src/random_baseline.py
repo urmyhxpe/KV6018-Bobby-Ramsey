@@ -4,6 +4,8 @@ from fitness import FitnessEvaluator
 from greedy_placement import greedy_placement
 from placement_testing import place_cylinders_random
 
+
+
 def random_ordering(num_cylinders):
     """Generate random orders"""
     random.seed()

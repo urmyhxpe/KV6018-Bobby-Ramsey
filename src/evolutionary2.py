@@ -115,11 +115,7 @@ class Population2:
         return child
 
     def mutate(self, individual, ordering_rate, position_rate):
-        """
-        Mutation for extended chromosome.
-        ordering_rate: probability of swap mutation on ordering
-        position_rate: probability of resetting each position choice
-        """
+        """Mutation for positions determined by the probability parameters"""
         # Swap mutation for ordering
         if random.random() < ordering_rate:
             size = len(individual.ordering)

@@ -14,6 +14,7 @@ def chromosome_placement(ordering, position_choices, cylinders, container):
 
         if valid_positions:
             # Use position_choice from chromosome to select from candidates
+            # mod allows a position to be found if testing for more positions than can be found by placement
             choice_idx = position_choices[step] % len(valid_positions)
             chosen_pos = valid_positions[choice_idx]
 
@@ -22,7 +23,7 @@ def chromosome_placement(ordering, position_choices, cylinders, container):
 
     return solution
 
-
+# same placement logic as greedy_placement
 def find_valid_positions(cylinder, placed, container):
     """ Get a list of valid positions """
     r = cylinder.diameter / 2

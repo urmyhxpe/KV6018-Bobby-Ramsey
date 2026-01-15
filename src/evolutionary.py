@@ -226,7 +226,7 @@ class EvolutionaryAlgorithm:
                       f"Feasible={stats['feasibility_ratio']:.0%}, "
                       f"Solution found={best_feasible}")
 
-            # Check for early stopping
+            # Check for early stopping for specific fitness testing
             if target_fitness is not None:
                 if stats['best'] >= target_fitness:
                     if track_output:

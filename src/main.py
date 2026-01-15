@@ -16,7 +16,7 @@ from visualisations import ContainerVisualiser, EvolutionVisualiser, SolutionCom
 
 
 def run_random_baseline(instances, max_attempts):
-    """Run random baseline on all instances."""
+    """Run random baseline on instances."""
     print("Random Baseline Algorithm")
     print("=" * 60)
 
@@ -52,8 +52,10 @@ def run_evolutionary(instances, greedy_placement):
         print("-" * 40)
 
         container, cylinders = load_instance(instance)
+        # Edit fitness defaults
         evaluator = FitnessEvaluator(container, cylinders, 100.0, 100.0, 50.0, 50.0)
 
+        # Note: change testing parameters here
         ea = EvolutionaryAlgorithm(
             container=container,
             cylinders=cylinders,
@@ -103,8 +105,13 @@ def run_evolutionary2(instances, placement_func):
         print("-" * 40)
 
         container, cylinders = load_instance(instance)
+
+        # Edit fitness defaults
         evaluator = FitnessEvaluator(container, cylinders, 100.0, 100.0, 50.0, 50.0)
 
+        # Note: change testing parameters here
+        # max positions is just an estimate for the number valid positions found by the placement algorithm at a given point
+        # so there are enough spots in the chromosome
         ea = EvolutionaryAlgorithm2(
             container=container,
             cylinders=cylinders,

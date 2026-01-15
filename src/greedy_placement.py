@@ -17,6 +17,8 @@ def greedy_placement(ordering, cylinders, container):
         current_cyl = cylinders[idx]
         valid_positions = find_valid_positions(current_cyl, solution.placed, container)
         if valid_positions:
+            # finds best position using COM score
+            # can change to something like best_position=valid_positions[0] to test without COM score
             best_position = min(valid_positions,key=lambda p: score_position(p, current_cyl, solution, center_x, center_y))
             placed = PlacedCylinder(cylinder=current_cyl, x=best_position[0], y=best_position[1])
             solution.placed.append(placed)
